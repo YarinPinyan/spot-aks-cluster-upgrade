@@ -1,0 +1,130 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ocean-aks-cluster-upgrade
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                      - linux
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.azure.com/mode
+                    operator: In
+                    values:
+                      - system
+      initContainers:
+      - name: connect-ocean
+        image: spotinst/ocean-aks-connector:AKS_CONNECTOR_LATEST_VERSION
+        imagePullPolicy: Always
+        args: ["connect-ocean"]
+        env:
+        - name: SPOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: spotinst-kubernetes-cluster-controller
+              key: token
+              optional: true
+        - name: SPOT_ACCOUNT
+          valueFrom:
+            secretKeyRef:
+              name: spotinst-kubernetes-cluster-controller
+              key: account
+              optional: true
+        - name: SPOT_TOKEN_LEGACY
+          valueFrom:
+            configMapKeyRef:
+              name: spotinst-kubernetes-cluster-controller-config
+              key: "spotinst.token"
+              optional: true
+        - name: SPOT_ACCOUNT_LEGACY
+          valueFrom:
+            configMapKeyRef:
+              name: spotinst-kubernetes-cluster-controller-config
+              key: "spotinst.account"
+              optional: true
+        - name: SPOT_CLUSTER_IDENTIFIER
+          valueFrom:
+            configMapKeyRef:
+              name: spotinst-kubernetes-cluster-controller-config
+              key: "spotinst.cluster-identifier"
+        - name: PROXY_URL
+          valueFrom:
+            configMapKeyRef:
+              name: spotinst-kubernetes-cluster-controller-config
+              key: "proxy-url"
+              optional: true
+        - name: SPOT_ACD_IDENTIFIER
+          value: RANDOM_ID
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsUser: 0
+        volumeMounts:
+          - mountPath: /var/lib/waagent
+            name: ocean-aks-cluster-upgrade
+      containers:
+        - name: ocean-aks-upgrade-cluster
+          image: public.ecr.aws/b0l0h0f0/spot-ocean-aks-gallery:latest
+          imagePullPolicy: Always
+          args: [ "OCEAN_AKS_ROLL_CLUSTER_PREFERENCES" ]
+          env:
+            - name: SPOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: spotinst-kubernetes-cluster-controller
+                  key: token
+                  optional: true
+            - name: SPOT_ACCOUNT
+              valueFrom:
+                secretKeyRef:
+                  name: spotinst-kubernetes-cluster-controller
+                  key: account
+                  optional: true
+            - name: SPOT_TOKEN_LEGACY
+              valueFrom:
+                configMapKeyRef:
+                  name: spotinst-kubernetes-cluster-controller-config
+                  key: "spotinst.token"
+                  optional: true
+            - name: SPOT_ACCOUNT_LEGACY
+              valueFrom:
+                configMapKeyRef:
+                  name: spotinst-kubernetes-cluster-controller-config
+                  key: "spotinst.account"
+                  optional: true
+            - name: SPOT_CLUSTER_IDENTIFIER
+              valueFrom:
+                configMapKeyRef:
+                  name: spotinst-kubernetes-cluster-controller-config
+                  key: "spotinst.cluster-identifier"
+            - name: PROXY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: spotinst-kubernetes-cluster-controller-config
+                  key: "proxy-url"
+                  optional: true
+            - name: SPOT_ACD_IDENTIFIER
+              value: RANDOM_ID
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: 0
+          volumeMounts:
+            - mountPath: /var/lib/waagent
+              name: ocean-aks-cluster-upgrade
+      restartPolicy: Never
+      volumes:
+      - name: ocean-aks-cluster-upgrade
+        hostPath:
+          path: /var/lib/waagent
+          type: Directory
+  backoffLimit: 1
