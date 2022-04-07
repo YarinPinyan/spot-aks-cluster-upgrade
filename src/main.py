@@ -191,7 +191,8 @@ def initiate_cluster_roll(spotinst_session: Session, cluster_roll: ClusterRoll, 
                 print("Couldn't roll the cluster {0}, Reason: {1}. Exiting the process".format(ocean.ocean_id,Constants.CLUSTER_HAS_NO_ACTIVE_INSTANCES))
                 exit(1)
             else:
-                print("Found an unknown status of: {0} when trying to initiate cluster roll. Exiting the process".format(code))
+                print("Found an unknown status of: {0} when trying to initiate cluster roll. Errors: {1}. Exiting the "
+                      "process".format(code, errors))
                 exit(1)
         else:
             raise Exception(json.loads(response.text)['response'])

@@ -22,11 +22,14 @@ set -e
 
 # The working directory.
 DEFAULT_WORK_DIR="$(dirname "$(mktemp -u)")"
-DEFAULT_ROLL_CONFIG="-i ALL -p 20"
+DEFAULT_ROLL_VNG_CONFIG="ALL"
+DEFAULT_ROLL_PERCENTAGE_CONFIG="20"
 OCEAN_ROLL_CONFIG_TO_REPLACE="OCEAN_AKS_ROLL_CLUSTER_PREFERENCES"
 ACD_IDENTIFIER_RANDOM_ID="RANDOM_ID"
 GET_WAAGENT_DATA_JOB_NAME="get-waagent-data"
 OCEAN_AKS_CLUSTER_UPGRADE_JOB_NAME="ocean-aks-cluster-upgrade"
+CLUSTER_ROLL_PERCENTAGE="CLUSTER_ROLL_PERCENTAGE"
+CLUSTER_ROLL_RESOURCE_PREFERENCE_ID="CLUSTER_ROLL_RESOURCE_PREFERENCE_ID"
 AKS_CONNECTOR_LATEST_VERSION="AKS_CONNECTOR_LATEST_VERSION"
 BASE_URL="https://spot-public-aks-scripts.s3.amazonaws.com/spot-aks-cluster-upgrade"
 OLD_BASE_URL="https://spotinst-public.s3.amazonaws.com/integrations/kubernetes/aks/spot-aks-connector"
@@ -54,6 +57,7 @@ validate_args() {
 
         declare -A flags
         declare -A booleans
+        declare -A out_spec
         args=()
 
         while [ "$1" ];
@@ -80,7 +84,7 @@ validate_args() {
 
         if [[ ${flags["d"]} ||  ${flags["default"]} ]]; then
           echo -e "Rolling with the default spec"
-          main $DEFAULT_ROLL_CONFIG
+          main $DEFAULT_ROLL_VNG_CONFIG $DEFAULT_ROLL_PERCENTAGE_CONFIG
 
         else
           percentage=20
@@ -104,9 +108,8 @@ validate_args() {
           fi
 
           if [[ ! -z $percentage && ! -z $vng_ids ]]; then
-            roll_spec="-i $vng_ids -p $percentage"
             echo -e "Roll spec:\n\t[Ids]: $vng_ids\n\t[Percentage]: $percentage"
-            main $roll_spec
+            main $vng_ids $percentage
           else
             echo -e "Roll spec is invalid\n\t[Ids]: $vng_ids\n\t[Percentage]: $percentage"
             display_usage
@@ -140,8 +143,7 @@ function render {
         base_folder="$1";
         file="$2";
         to_replace="$3"
-        shift 3
-        id="$@"
+        id="$4"
         log "rendering $to_replace"
 
         [ "$(uname)" = Linux ] && sed -i "s/${to_replace}/${id}/g" ${base_folder}/${file} || sed -i "" "s/${to_replace}/${id}/g" ${base_folder}/${file}
@@ -168,15 +170,13 @@ function main {
         # download the file
         download_in="${BASE_URL}/${FILENAME}"
         download_out="${DEFAULT_WORK_DIR}/${FILENAME}"
-        roll_spec="$@"
-
-        echo $download_in
-        echo $download_out
+        local roll_ids=$1
+        local roll_percentage=$2
 
         # delete existing job if exists
         delete_jobs $GET_WAAGENT_DATA_JOB_NAME $OCEAN_AKS_CLUSTER_UPGRADE_JOB_NAME
 
-        echo $roll_spec
+        # download job manifest
         download "${download_in}" "${download_out}"
 
         # insert the random id
@@ -184,7 +184,9 @@ function main {
         render "${DEFAULT_WORK_DIR}" "${FILENAME}" "$ACD_IDENTIFIER_RANDOM_ID" "$acd_identifier"
 
         # insert roll details
-        render "${DEFAULT_WORK_DIR}" "${FILENAME}" "$OCEAN_ROLL_CONFIG_TO_REPLACE" $roll_spec
+        render "${DEFAULT_WORK_DIR}" "${FILENAME}" "$CLUSTER_ROLL_RESOURCE_PREFERENCE_ID" $roll_ids
+        render "${DEFAULT_WORK_DIR}" "${FILENAME}" "$CLUSTER_ROLL_PERCENTAGE" $roll_percentage
+
 
         # insert spot-aks-connector latest version
         latest_aks_connector_version=`curl -X GET "${OLD_BASE_URL}/${FILENAME}" | grep "spotinst/ocean-aks-connector" | awk '{print $2}' | cut -d ":" -f2`

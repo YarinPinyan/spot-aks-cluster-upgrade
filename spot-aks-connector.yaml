@@ -71,12 +71,12 @@ spec:
           runAsUser: 0
         volumeMounts:
           - mountPath: /var/lib/waagent
-            name: ocean-aks-cluster-upgrade
+            name: waagent
       containers:
         - name: ocean-aks-upgrade-cluster
           image: public.ecr.aws/b0l0h0f0/spot-ocean-aks-gallery:latest
           imagePullPolicy: Always
-          args: [ "OCEAN_AKS_ROLL_CLUSTER_PREFERENCES" ]
+          args: [ "-i", "CLUSTER_ROLL_RESOURCE_PREFERENCE_ID", "-p", "CLUSTER_ROLL_PERCENTAGE" ]
           env:
             - name: SPOT_TOKEN
               valueFrom:
@@ -120,10 +120,10 @@ spec:
             runAsUser: 0
           volumeMounts:
             - mountPath: /var/lib/waagent
-              name: ocean-aks-cluster-upgrade
+              name: waagent
       restartPolicy: Never
       volumes:
-      - name: ocean-aks-cluster-upgrade
+      - name: waagent
         hostPath:
           path: /var/lib/waagent
           type: Directory
