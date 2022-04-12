@@ -4,7 +4,7 @@ Provides a CLI and programmatic interface to Spot by NetApp Ocean API once an AK
 
 ## Flow
 In order to run, There is a programmatic CLI with the name of **init.sh**, and may run with the next command:
-`sh init.sh`
+`./init.sh`
 
 The next usage screen will be on the stdout:
 ```bash Usage: ./init.sh Options:
@@ -14,8 +14,8 @@ The next usage screen will be on the stdout:
 ```
 
 ## Scenarios
-1. In order to deploy cluster with all VNGs, and 30% of the cluster will be rolled on each batch, run `sh init.sh -i ALL -p 30`
-2. In order to deploy specific VNG, with 20% of the VNG on each batch, run `sh init.sh -i "vng-xxxxxxxx" -p 20`
+1. In order to deploy cluster with all VNGs, and 30% of the cluster will be rolled on each batch, run `./init.sh -i ALL -p 30`
+2. In order to deploy specific VNG, with 20% of the VNG on each batch, run `./init.sh -i "vng-xxxxxxxx" -p 20`
 
 
 # Under the hood
