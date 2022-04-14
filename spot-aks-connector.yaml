@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: ocean-aks-cluster-upgrade
-  namespace: kube-system
+  namespace: KUBERNETES_NAMESPACE_NAME
 spec:
   template:
     spec:
@@ -15,10 +15,6 @@ spec:
                     operator: In
                     values:
                       - linux
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
                   - key: kubernetes.azure.com/mode
                     operator: In
                     values:

@@ -34,10 +34,13 @@ AKS_CONNECTOR_LATEST_VERSION="AKS_CONNECTOR_LATEST_VERSION"
 BASE_URL="https://spot-public-aks-scripts.s3.amazonaws.com/spot-aks-cluster-upgrade"
 OLD_BASE_URL="https://spotinst-public.s3.amazonaws.com/integrations/kubernetes/aks/spot-aks-connector"
 FILENAME="spot-aks-connector.yaml"
+DEFAULT_K8S_NAMESPACE="kube-system"
+KUBERNETES_NAMESPACE_NAME="KUBERNETES_NAMESPACE_NAME"
 
 display_usage() {
         echo -e "\nUsage: $0 Options:\n\t[-i, --ids]: If present, list the required virtual node group(s) to roll (vng-xxxxxxxx,...)\n\t[-p, --percentage]: If present, list the required percentage you want to roll the cluster. Integer 0-100"
         echo -e "\t[-d, --default]: If present, will roll with the default cluster roll (all cluster will be rolled, 20% per batch) - accepts true/1 in order to run."
+        echo -e "\t[-n, --namespace]: If present, the job will be installed in the chosen namespace. kube-system is the default"
 }
 
 validate_args() {
@@ -82,34 +85,45 @@ validate_args() {
             fi
         done
 
-        if [[ ${flags["d"]} ||  ${flags["default"]} ]]; then
+        if [[ ${flags["d"]} ||  ${flags["-default"]} ]]; then
           echo -e "Rolling with the default spec"
-          main $DEFAULT_ROLL_VNG_CONFIG $DEFAULT_ROLL_PERCENTAGE_CONFIG
+          main $DEFAULT_ROLL_VNG_CONFIG $DEFAULT_ROLL_PERCENTAGE_CONFIG $DEFAULT_K8S_NAMESPACE
 
         else
           percentage=20
-          if [[ ${flags["p"]} || ${flags["percentage"]} ]]; then
-            percentage=${flags["percentage"]}
+          namespace=$DEFAULT_K8S_NAMESPACE
+
+          if [[ ${flags["n"]} ||  ${flags["-namespace"]} ]]; then
+            namespace=${flags["-namespace"]}
+            if [[ ${flags["n"]} ]]; then
+              namespace=${flags["n"]}
+            fi
+          fi
+
+          if [[ ${flags["p"]} || ${flags["-percentage"]} ]]; then
+            percentage=${flags["-percentage"]}
             if [[ ${flags["p"]} ]]; then
               percentage=${flags["p"]}
               fi
-            if [[ ! $percentage -ge 1 && $percentage -le 100 ]]; then
+            echo $percentage
+
+            if [[ $percentage -lt 1 || $percentage -gt 100 ]]; then
                 display_usage
                 exit 0
             fi
           fi
 
           vng_ids="ALL"
-          if [[ ${flags["i"]} || ${flags["ids"]} ]]; then
+          if [[ ${flags["i"]} || ${flags["-ids"]} ]]; then
               vng_ids=${flags["i"]}
-              if [[ ${flags["ids"]} ]]; then
-                vng_ids=${flags["ids"]}
+              if [[ ${flags["-ids"]} ]]; then
+                vng_ids=${flags["-ids"]}
               fi
           fi
 
-          if [[ ! -z $percentage && ! -z $vng_ids ]]; then
+          if [[ ! -z $percentage && ! -z $vng_ids && ! -z $namespace ]]; then
             echo -e "Roll spec:\n\t[Ids]: $vng_ids\n\t[Percentage]: $percentage"
-            main $vng_ids $percentage
+            main $vng_ids $percentage $namespace
           else
             echo -e "Roll spec is invalid\n\t[Ids]: $vng_ids\n\t[Percentage]: $percentage"
             display_usage
@@ -172,6 +186,7 @@ function main {
         download_out="${DEFAULT_WORK_DIR}/${FILENAME}"
         local roll_ids=$1
         local roll_percentage=$2
+        local roll_namespace=$3
 
         # delete existing job if exists
         delete_jobs $GET_WAAGENT_DATA_JOB_NAME $OCEAN_AKS_CLUSTER_UPGRADE_JOB_NAME
@@ -186,6 +201,7 @@ function main {
         # insert roll details
         render "${DEFAULT_WORK_DIR}" "${FILENAME}" "$CLUSTER_ROLL_RESOURCE_PREFERENCE_ID" $roll_ids
         render "${DEFAULT_WORK_DIR}" "${FILENAME}" "$CLUSTER_ROLL_PERCENTAGE" $roll_percentage
+        render "${DEFAULT_WORK_DIR}" "${FILENAME}" "$KUBERNETES_NAMESPACE_NAME" $roll_namespace
 
 
         # insert spot-aks-connector latest version
