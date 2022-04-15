@@ -38,7 +38,7 @@ DEFAULT_K8S_NAMESPACE="kube-system"
 KUBERNETES_NAMESPACE_NAME="KUBERNETES_NAMESPACE_NAME"
 
 display_usage() {
-        echo -e "\nUsage: $0 Options:\n\t[-i, --ids]: If present, list the required virtual node group(s) to roll (vng-xxxxxxxx,...)\n\t[-p, --percentage]: If present, list the required percentage you want to roll the cluster. Integer 0-100"
+        echo -e "\nUsage: $0 Options:\n\t[-i, --ids]: If present, list the required virtual node group(s) to roll, separated by commas ('vng-xxxxxxxx,...')\n\t[-p, --percentage]: If present, list the required percentage you want to roll the cluster. Integer 0-100"
         echo -e "\t[-d, --default]: If present, will roll with the default cluster roll (all cluster will be rolled, 20% per batch) - accepts true/1 in order to run."
         echo -e "\t[-n, --namespace]: If present, the job will be installed in the chosen namespace. kube-system is the default"
 }
