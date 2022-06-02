@@ -11,14 +11,13 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
-                  - key: kubernetes.io/os
-                    operator: In
-                    values:
-                      - linux
                   - key: kubernetes.azure.com/mode
                     operator: In
                     values:
-                      - system
+                        - system
+                  - key: spotinst.io/ocean-vng-id
+                    operator: DoesNotExist
+
       initContainers:
       - name: connect-ocean
         image: spotinst/ocean-aks-connector:AKS_CONNECTOR_LATEST_VERSION
