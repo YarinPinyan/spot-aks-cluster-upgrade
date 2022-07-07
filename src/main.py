@@ -269,9 +269,10 @@ def main():
 
     else:
         cluster_roll_data.__setattr__('id', existing_cluster_roll)
-        display_cluster_roll_progress(cluster_roll=cluster_roll_data,
-                                      spotinst_session=spotinst_session,
-                                      ocean=ocean)
+        print("Cluster roll is already initiated, please track the progress via Ocean UI. Cluster roll details: {0}".format(cluster_roll_data))
+        #display_cluster_roll_progress(cluster_roll=cluster_roll_data,
+                                      #spotinst_session=spotinst_session,
+                                      #ocean=ocean)
     exit(1)
 
 
